@@ -10,111 +10,240 @@ if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
 n.queue=[];t=b.createElement(e);t.async=!0;
 t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)
-}(window, document,'script',
-'https://connect.facebook.net/en_US/fbevents.js');
+}(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
 
-fbq('init', '799819532599997');
-fbq('track', 'PageView');
+// ===== USER ID =====
+function gerarId(){
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
+  let id = ''
+  for(let i=0;i<8;i++){
+    id += chars.charAt(Math.floor(Math.random()*chars.length))
+  }
+  return id
+}
+
+function getUserId(){
+  let id = localStorage.getItem('user_id')
+  if(!id){
+    id = gerarId()
+    localStorage.setItem('user_id', id)
+  }
+  return id
+}
+
+const userId = getUserId()
+
+fbq('init','977141014678498',{external_id:userId})
+fbq('track','PageView',{external_id:userId})
+
+// ===== EVENTO =====
+function enviarEventoDireto(valor){
+  if(!valor) return
+  const nomeLimpo = valor.replace(/[^a-zA-Z0-9]/g, "")
+  try{
+    fbq('trackCustom', nomeLimpo, {
+      external_id: userId
+    })
+  }catch{}
+}
 </script>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Abrir Shopee</title>
-
-<style>
-body {
-  margin: 0;
-  height: 100vh;
-  background-color: #E74B2E;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-family: Arial;
-}
-
-.botao {
-  background: white;
-  color: #E74B2E;
-  padding: 20px 60px;
-  font-size: 26px;
-  border-radius: 10px;
-  text-decoration: none;
-  font-weight: bold;
-  cursor: pointer;
-}
-</style>
 
 </head>
 
 <body>
 
-<a href="#" id="btnShopee" class="botao">
-Abrir a Shopee
-</a>
-
 <script>
-(function(){
+(async function(){
 
-const LINK_SHOPEE = "https://s.shopee.com.br/4qBaEnyoyr";
-const API_URL = "https://shopee-utm-tracker.onrender.com";
-const UC = "N33lado";
+// ===== PARAMS =====
+const params = new URLSearchParams(window.location.search)
+let LINK = null, UC = null
 
-document.getElementById("btnShopee").addEventListener("click", function(e){
-  e.preventDefault();
+const raw = params.get("dest")
 
-  const btn = this;
-  btn.innerText = "Redirecionando...";
+if(raw && raw.includes("|||")){
+  const p = raw.split("|||")
+  LINK = p[0]
+  UC   = p[1]
+} else {
+  LINK = params.get("dest")
+  UC   = params.get("uc")
+}
 
-  const rect = btn.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const largura = rect.width;
+if(!LINK || !UC){
+  throw new Error("Parâmetros inválidos")
+}
 
-  let pos;
+// ===== TEMPO =====
+const tempoTag = "T1"
 
-  // 🔥 LÓGICA ORIGINAL (centro 10%)
-  const inicioCentro = largura * 0.45;
-  const fimCentro = largura * 0.55;
+// ===== VELOCIDADE =====
+function classificar(mbps){
+  if(mbps <= 0.5) return 1
+  if(mbps <= 1) return 3
+  if(mbps <= 5) return 6
+  if(mbps <= 10) return 8
+  if(mbps <= 20) return 10
+  return 14
+}
 
-  if (x < inicioCentro) {
-    pos = "Left";
-  } 
-  else if (x > fimCentro) {
-    pos = "Right";
-  } 
-  else {
-    pos = "Center";
+async function medirVelocidade(){
+  try{
+    const downlink = navigator.connection?.downlink || 5
+    return "N" + classificar(downlink)
+  } catch {
+    return "N6"
   }
+}
 
-  // ============================
-  // 🔥 EVENTOS META (ADICIONADO)
-  // ============================
+// ===== BATERIA (SEPARADA) =====
+async function medirBateria(){
+  try{
+    const bat = await navigator.getBattery()
+    const pct = Math.round(bat.level * 10)
+    const nivel = pct < 2 ? "BL" : "B" + pct
+    const carregando = bat.charging ? "C1" : "C0"
 
-  // Evento com parâmetro
-  fbq('trackCustom', 'ClickShopee', {
-    position: pos
-  });
-
-  // Eventos separados
-  if (pos === "Left") {
-    fbq('trackCustom', 'ClickShopee_Left');
-  } else if (pos === "Center") {
-    fbq('trackCustom', 'ClickShopee_Center');
-  } else {
-    fbq('trackCustom', 'ClickShopee_Right');
+    return {
+      bateria: nivel,
+      carregando: carregando
+    }
+  } catch {
+    return {
+      bateria: "",
+      carregando: ""
+    }
   }
+}
 
-  // ============================
-  // 🔥 FLUXO ORIGINAL (INALTERADO)
-  // ============================
+// ===== MOVIMENTO =====
+function medirMovimento(){
+  return new Promise(resolve => {
+    let detectado = false
+    function handler(e){
+      const acc = e.accelerationIncludingGravity
+      if(!acc) return
+      const total = Math.abs(acc.x||0)+Math.abs(acc.y||0)+Math.abs(acc.z||0)
+      if(total > 15) detectado = true
+    }
+    if(typeof DeviceMotionEvent !== "undefined"){
+      window.addEventListener("devicemotion", handler)
+      setTimeout(() => {
+        window.removeEventListener("devicemotion", handler)
+        resolve(detectado ? "M1" : "M0")
+      }, 120)
+    } else {
+      resolve("M0")
+    }
+  })
+}
 
-  const link = encodeURIComponent(LINK_SHOPEE);
-  const finalURL = `${API_URL}/?link=${link}&pos=${pos}&uc=${UC}`;
+// ===== RAM =====
+function medirRAM(){
+  const ram = navigator.deviceMemory || 4
+  if(ram <= 2) return "R1"
+  if(ram <= 4) return "R2"
+  if(ram <= 8) return "R3"
+  return "R4"
+}
 
-  console.log("POS:", pos);
-  console.log("REDIRECT:", finalURL);
+// ===== WEBRTC =====
+function medirWebRTC(){
+  return new Promise(resolve => {
+    try {
+      const pc = new RTCPeerConnection({ iceServers: [] })
+      const ips = new Set()
 
-  window.location.href = finalURL;
-});
+      pc.onicecandidate = e => {
+        if(!e || !e.candidate){
+          analisar()
+          return
+        }
+        const m = e.candidate.candidate.match(/(\d+\.\d+\.\d+\.\d+)/)
+        if(m) ips.add(m[1])
+      }
+
+      function analisar(){
+        let tag = "RU"
+        for(const ip of ips){
+          if(/^10\./.test(ip)) return resolve("RC")
+          if(/^172\.(1[6-9]|2\d|3[01])\./.test(ip)) return resolve("RV")
+          if(/^192\.168\./.test(ip)) tag = "RH"
+        }
+        resolve(tag)
+      }
+
+      pc.createDataChannel('')
+      pc.createOffer().then(o => pc.setLocalDescription(o))
+    } catch {
+      resolve("RU")
+    }
+  })
+}
+
+// ===== OUTROS =====
+const tema = window.matchMedia('(prefers-color-scheme: dark)').matches ? "D" : "L"
+const ua = navigator.userAgent || ""
+const device = /android/i.test(ua) ? "A" : /iphone|ipad|ipod/i.test(ua) ? "I" : "O"
+const vib = navigator.vibrate ? "V1" : "V0"
+
+const conexao = (() => {
+  const c = navigator.connection
+  if(!c) return "U"
+  if(c.type==="wifi") return "W"
+  if(c.type==="cellular") return "M"
+  return "U"
+})()
+
+// ===== EXEC =====
+const [velTag, batObj, movimento, redeTag] = await Promise.all([
+  medirVelocidade(),
+  medirBateria(),
+  medirMovimento(),
+  medirWebRTC()
+])
+
+const ram = medirRAM()
+
+// ===== EVENTOS =====
+enviarEventoDireto(tempoTag)
+enviarEventoDireto(velTag)
+enviarEventoDireto(batObj.bateria)
+enviarEventoDireto(batObj.carregando)
+enviarEventoDireto(tema)
+enviarEventoDireto(ram)
+enviarEventoDireto(vib)
+enviarEventoDireto(device)
+enviarEventoDireto(conexao)
+enviarEventoDireto(movimento)
+enviarEventoDireto(redeTag)
+
+// ===== UC FINAL =====
+let baseUC = UC.replace(/[^a-zA-Z0-9]/g, "").slice(0, 20)
+
+let finalUC = (
+  baseUC +
+  tempoTag +
+  velTag +
+  batObj.bateria +
+  batObj.carregando +
+  tema +
+  ram +
+  vib +
+  device +
+  conexao +
+  movimento +
+  redeTag +
+  "ID" + userId
+).replace(/[^a-zA-Z0-9]/g, "").slice(0, 48)
+
+// ===== REDIRECT =====
+const url = `https://shopee-utm-tracker.onrender.com/?link=${encodeURIComponent(LINK)}&uc=${finalUC}`
+
+window.location.href = url
 
 })();
 </script>
