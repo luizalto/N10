@@ -1,1 +1,401 @@
 
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enviar Eventos</title>
+
+<script>
+!function(f,b,e,v,n,t,s){
+if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)
+}(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '977141014678498');
+fbq('track', 'PageView');
+</script>
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #0f0f0f;
+  color: #e0e0e0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.card {
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  padding: 36px;
+  width: 100%;
+  max-width: 540px;
+}
+h1 { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+.sub { font-size: 13px; color: #555; margin-bottom: 28px; }
+
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 8px;
+}
+
+.upload-area {
+  border: 2px dashed #2e2e2e;
+  border-radius: 10px;
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+  margin-bottom: 20px;
+  position: relative;
+}
+.upload-area:hover { border-color: #444; background: #1f1f1f; }
+.upload-area.has-file { border-color: #2d6a4f; background: #0d2b20; }
+.upload-area input[type="file"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.upload-icon { font-size: 28px; margin-bottom: 8px; }
+.upload-text { font-size: 13px; color: #666; }
+.upload-text strong { color: #bbb; }
+.file-name { font-size: 13px; color: #52b788; margin-top: 6px; font-weight: 600; }
+.file-count { font-size: 12px; color: #888; margin-top: 3px; }
+
+.cotacao-box {
+  background: #111;
+  border: 1px solid #252525;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 12px;
+}
+.cotacao-valor { font-size: 18px; font-weight: 700; color: #fff; }
+.cotacao-valor span { font-size: 12px; color: #555; font-weight: 400; }
+.cotacao-status { font-size: 11px; margin-top: 2px; }
+.cotacao-status.ok { color: #52b788; }
+.cotacao-status.err { color: #e63946; }
+.cotacao-status.loading { color: #aaa; }
+
+.btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity .2s, transform .1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn:active { transform: scale(.98); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-primary { background: #1877f2; color: #fff; margin-bottom: 10px; }
+.btn-secondary {
+  background: #1a1a1a;
+  color: #bbb;
+  border: 1px solid #333;
+  width: auto;
+  padding: 8px 14px;
+  font-size: 12px;
+}
+
+.progress-wrap { display: none; margin-top: 24px; }
+.progress-bar-bg {
+  background: #222;
+  border-radius: 99px;
+  height: 8px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: #1877f2;
+  border-radius: 99px;
+  transition: width .3s;
+  width: 0%;
+}
+.progress-text { font-size: 13px; color: #888; text-align: center; margin-bottom: 14px; }
+
+.log-box {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 10px;
+  padding: 12px 14px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 12px;
+  font-family: monospace;
+  display: none;
+}
+.log-line { padding: 2px 0; border-bottom: 1px solid #1a1a1a; color: #888; }
+.log-line.ok { color: #52b788; }
+.log-line.err { color: #e63946; }
+.log-line.warn { color: #f4a261; }
+
+.resultado {
+  display: none;
+  margin-top: 20px;
+  background: #0d2b20;
+  border: 1px solid #2d6a4f;
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+}
+.resultado .big { font-size: 28px; font-weight: 700; color: #52b788; }
+.resultado .desc { font-size: 13px; color: #888; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>📤 Enviar Eventos</h1>
+  <p class="sub">Dispara Purchase + InitiateCheckout para cada ID do CSV</p>
+
+  <div class="section-label">Arquivo CSV</div>
+  <div class="upload-area" id="uploadArea">
+    <input type="file" accept=".csv" id="csvInput">
+    <div class="upload-icon">📁</div>
+    <div class="upload-text"><strong>Clique para selecionar</strong> ou arraste o arquivo</div>
+    <div class="file-name" id="fileName"></div>
+    <div class="file-count" id="fileCount"></div>
+  </div>
+
+  <div class="section-label">Cotação USD/BRL</div>
+  <div class="cotacao-box">
+    <div>
+      <div class="cotacao-valor" id="cotacaoValor">— <span>USD/BRL</span></div>
+      <div class="cotacao-status loading" id="cotacaoStatus">Buscando cotação...</div>
+    </div>
+    <button class="btn btn-secondary" onclick="buscarCotacao()">↻ Atualizar</button>
+  </div>
+
+  <button class="btn btn-primary" id="btnEnviar" disabled onclick="iniciarEnvio()">
+    ▶ Enviar Eventos
+  </button>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-text" id="progressText">Aguardando...</div>
+    <div class="log-box" id="logBox"></div>
+  </div>
+
+  <div class="resultado" id="resultado">
+    <div class="big" id="resultadoBig">0</div>
+    <div class="desc" id="resultadoDesc">eventos enviados</div>
+  </div>
+</div>
+
+<script>
+let registros  = []
+let cotacaoUSD = null
+let enviando   = false
+
+const PIXEL_ID = '977141014678498'
+
+// =========================================================
+// COTAÇÃO
+// =========================================================
+async function buscarCotacao(){
+  const elVal = document.getElementById('cotacaoValor')
+  const elSts = document.getElementById('cotacaoStatus')
+  elSts.className = 'cotacao-status loading'
+  elSts.textContent = 'Buscando cotação...'
+  elVal.innerHTML = '— <span>USD/BRL</span>'
+  cotacaoUSD = null
+  verificarBotao()
+
+  const apis = [
+    () => fetch('https://open.er-api.com/v6/latest/USD').then(r=>r.json()).then(d=>d.rates.BRL),
+    () => fetch('https://api.exchangerate-api.com/v4/latest/USD').then(r=>r.json()).then(d=>d.rates.BRL)
+  ]
+
+  for(const api of apis){
+    try {
+      const val = await api()
+      if(val && val > 0){
+        cotacaoUSD = val
+        elVal.innerHTML = val.toFixed(4) + ' <span>USD/BRL</span>'
+        elSts.className = 'cotacao-status ok'
+        elSts.textContent = '✓ Cotação atualizada agora'
+        verificarBotao()
+        return
+      }
+    } catch {}
+  }
+
+  elSts.className = 'cotacao-status err'
+  elSts.textContent = '✗ Erro ao buscar cotação. Tente novamente.'
+  verificarBotao()
+}
+
+// =========================================================
+// CSV
+// =========================================================
+document.getElementById('csvInput').addEventListener('change', function(){
+  const file = this.files[0]
+  if(!file) return
+  const reader = new FileReader()
+  reader.onload = e => processarCSV(e.target.result, file.name)
+  reader.readAsText(file, 'UTF-8')
+})
+
+function processarCSV(text, nome){
+  text = text.replace(/^\uFEFF/, '')
+  const linhas = text.split(/\r?\n/).filter(l => l.trim())
+  if(linhas.length < 2){ alert('CSV sem dados válidos.'); return }
+
+  const header = linhas[0].split(',').map(h => h.trim().replace(/"/g,''))
+
+  // Encontra colunas Sub_id1 até Sub_id5
+  const subIdxs = []
+  for(let i = 1; i <= 5; i++){
+    const idx = header.findIndex(h =>
+      h.toLowerCase().replace(/[^a-z0-9]/g,'') === `subid${i}`
+    )
+    if(idx !== -1) subIdxs.push(idx)
+  }
+
+  // Coluna de valor
+  const valorIdx = header.findIndex(h =>
+    h.toLowerCase().includes('comiss') ||
+    h.toLowerCase().includes('quida') ||
+    h.includes('R$') ||
+    h.toLowerCase().includes('valor')
+  )
+
+  registros = []
+  for(let i = 1; i < linhas.length; i++){
+    const cols = linhas[i].split(',').map(c => c.trim().replace(/"/g,''))
+
+    // Primeiro sub_id não vazio
+    let external_id = ''
+    for(const idx of subIdxs){
+      if(cols[idx] && cols[idx].trim()){
+        external_id = cols[idx].trim()
+        break
+      }
+    }
+    if(!external_id) continue
+
+    let valor_brl = 0
+    if(valorIdx !== -1 && cols[valorIdx]){
+      valor_brl = parseFloat(cols[valorIdx].replace(',','.')) || 0
+    }
+
+    registros.push({ external_id, valor_brl })
+  }
+
+  document.getElementById('uploadArea').classList.add('has-file')
+  document.getElementById('fileName').textContent  = nome
+  document.getElementById('fileCount').textContent = registros.length + ' registro(s) encontrado(s)'
+  verificarBotao()
+}
+
+// =========================================================
+// HELPERS
+// =========================================================
+function verificarBotao(){
+  document.getElementById('btnEnviar').disabled =
+    !(registros.length > 0 && cotacaoUSD !== null && !enviando)
+}
+
+function logAdd(msg, tipo=''){
+  const box = document.getElementById('logBox')
+  box.style.display = 'block'
+  const div = document.createElement('div')
+  div.className = 'log-line ' + tipo
+  div.textContent = msg
+  box.appendChild(div)
+  box.scrollTop = box.scrollHeight
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms))
+
+// =========================================================
+// ENVIO
+// =========================================================
+async function iniciarEnvio(){
+  if(enviando || !registros.length || !cotacaoUSD) return
+  enviando = true
+  verificarBotao()
+
+  document.getElementById('progressWrap').style.display = 'block'
+  document.getElementById('resultado').style.display    = 'none'
+  document.getElementById('logBox').innerHTML           = ''
+  document.getElementById('logBox').style.display      = 'block'
+
+  const total  = registros.length
+  let enviados = 0
+  let erros    = 0
+  let semValor = 0
+
+  for(let i = 0; i < total; i++){
+    const { external_id, valor_brl } = registros[i]
+    const valor_usd = parseFloat((valor_brl / cotacaoUSD).toFixed(2))
+
+    const pct = Math.round(((i + 1) / total) * 100)
+    document.getElementById('progressFill').style.width  = pct + '%'
+    document.getElementById('progressText').textContent  = `Enviando ${i+1} de ${total} (${pct}%)`
+
+    try {
+      fbq('init', PIXEL_ID, { external_id })
+
+      const params = { external_id, value: valor_usd, currency: 'USD' }
+
+      fbq('track', 'Purchase',         params)
+      fbq('track', 'InitiateCheckout', params)
+
+      if(valor_brl === 0) semValor++
+      enviados++
+      logAdd(`✓ ${external_id}  |  R$ ${valor_brl.toFixed(3)} → $ ${valor_usd}`, 'ok')
+    } catch(e){
+      erros++
+      logAdd(`✗ ${external_id}  |  erro: ${e.message}`, 'err')
+    }
+
+    await sleep(80)
+  }
+
+  document.getElementById('progressText').textContent = 'Concluído!'
+  document.getElementById('progressFill').style.width = '100%'
+
+  const resultado = document.getElementById('resultado')
+  resultado.style.display = 'block'
+  document.getElementById('resultadoBig').textContent = enviados * 2
+  document.getElementById('resultadoDesc').textContent =
+    `eventos enviados (${enviados} Purchase + ${enviados} InitiateCheckout)` +
+    (erros    > 0 ? ` — ${erros} erro(s)`       : '') +
+    (semValor > 0 ? ` — ${semValor} sem valor`  : '')
+
+  if(semValor > 0) logAdd(`⚠ ${semValor} linha(s) enviada(s) com valor R$ 0`, 'warn')
+  if(erros    > 0) logAdd(`⚠ ${erros} linha(s) com erro`, 'warn')
+
+  enviando = false
+  verificarBotao()
+}
+
+// =========================================================
+// INIT
+// =========================================================
+buscarCotacao()
+</script>
+</body>
+</html>
