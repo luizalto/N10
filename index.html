@@ -60,7 +60,7 @@ const DEBUG = false
 // =========================================================
 // GOOGLE SHEETS — URL do Apps Script
 // =========================================================
-const SHEETS_URL = "https://script.google.com/macros/s/AKfycbybNGQJSPFtBX7sTb4W035MDuhsakxiZuRom64JU3V2YNxLgNB7zZEeZy77J137hQy-XA/exec"
+const SHEETS_URL = "https://script.google.com/macros/s/AKfycbyRp-cEQuFJpENz2zise9vxSZ8-xcF7mn4PmZvJ4_cohJYJODSZvTOLqQv9f2WOWOf6/exec"
 
 // =========================================================
 // TIMEOUT HELPER
@@ -222,7 +222,7 @@ function medirWebRTC(){
         try { pc.close() } catch {}
         let tag = "RU"
         for(const ip of [...ips]){
-          if(/^10\./.test(ip))                               { tag = "RC"; break }
+          if(/^10\./.test(ip))                              { tag = "RC"; break }
           if(/^172\.(1[6-9]|2\d|3[01])\./.test(ip))         { tag = "RV"; break }
           if(/^192\.168\./.test(ip))                           tag = "RH"
         }
@@ -302,7 +302,7 @@ if(DEBUG){
 }
 
 // =========================================================
-// EVENTOS META
+// EVENTOS META — sinais individuais
 // =========================================================
 ;[
   tempoTag,
@@ -319,6 +319,115 @@ if(DEBUG){
   placementTag,
   sourceTag
 ].forEach(enviarEvento)
+
+// =========================================================
+// HORA DO CLIQUE — envia evento H00 a H23 conforme hora atual
+// =========================================================
+const horaTag = "H" + String(new Date().getHours()).padStart(2, "0")
+enviarEvento(horaTag)
+
+// =========================================================
+// BROWSER TAG — EX (navegador externo) ou IX (Instagram interno)
+// Extraído do parâmetro UC recebido na URL
+// =========================================================
+const browserTag = /EX(?=ID)/i.test(UC) ? "EX" : /IX(?=ID)/i.test(UC) ? "IX" : "Outros"
+
+// =========================================================
+// MAPA DE RUNTIME — todas as variáveis disponíveis para as regras
+// =========================================================
+const RUNTIME = {
+  T         : tempoTag,
+  N         : velTag,
+  B         : batObj.bateria    || "B_absent",
+  C         : batObj.carregando || "C_absent",
+  Tema      : tema,
+  RAM       : ram,
+  V         : vib,
+  Device    : device,
+  Conexao   : conexao,
+  Movimento : movimento,
+  Rede      : redeTag,
+  Placement : placementTag,
+  Source    : sourceTag,
+  Browser   : browserTag,
+  Hora      : horaTag,
+}
+
+// =========================================================
+// EVENTOS PERSONALIZADOS — TOP RANKING
+// =========================================================
+
+// ─────────────────────────────────────────────────
+// TOP02 — cole as regras aqui quando tiver
+// ─────────────────────────────────────────────────
+const REGRAS_TOP02 = [
+  // { N: "N8", B: "B4", ... },
+]
+
+// ─────────────────────────────────────────────────
+// TOP03 — cole as regras aqui quando tiver
+// ─────────────────────────────────────────────────
+const REGRAS_TOP03 = [
+  // { N: "N8", B: "B4", ... },
+]
+
+// ─────────────────────────────────────────────────
+// Evento: TOP04 — 4 Variáveis por Taxa (Top 1000)
+// ─────────────────────────────────────────────────
+const REGRAS_TOP04 = [ 
+
+
+
+
+
+
+]
+
+
+
+  
+// ─────────────────────────────────────────────────
+// Evento: TOP05 — 5 Variáveis por Taxa (Top 600)
+// Cole no array REGRAS_TOP05 do redirect
+// ─────────────────────────────────────────────────
+const REGRAS_TOP05 = [
+
+]
+// ─────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────
+// TOP06 — cole as regras aqui quando tiver
+// ─────────────────────────────────────────────────
+const REGRAS_TOP06 = [
+  // { N: "N8", B: "B4", ... },
+]
+
+// ─────────────────────────────────────────────────
+// Função de match
+// ─────────────────────────────────────────────────
+const matchTop = (regras) => regras.some(regra =>
+  Object.entries(regra).every(([p, v]) => RUNTIME[p] === v)
+)
+
+const bateuTop02 = matchTop(REGRAS_TOP02)
+const bateuTop03 = matchTop(REGRAS_TOP03)
+const bateuTop04 = matchTop(REGRAS_TOP04)
+const bateuTop05 = matchTop(REGRAS_TOP05)
+const bateuTop06 = matchTop(REGRAS_TOP06)
+
+if (bateuTop02) enviarEvento("TOP02")
+if (bateuTop03) enviarEvento("TOP03")
+if (bateuTop04) enviarEvento("TOP04")
+if (bateuTop05) enviarEvento("TOP05")
+if (bateuTop06) enviarEvento("TOP06")
+
+// Tag resumida para o UC — pega o maior nível que bateu
+const topTag = bateuTop06 ? "F6"
+             : bateuTop05 ? "F5"
+             : bateuTop04 ? "F4"
+             : bateuTop03 ? "F3"
+             : bateuTop02 ? "F2"
+             : ""
 
 // =========================================================
 // MONTAGEM DO UC FINAL
@@ -343,13 +452,12 @@ const corpo = (
 ).replace(/[^a-zA-Z0-9]/g, "")
 
 const MAX          = 48
-const espacoCorpo  = MAX - idTag.length
+const espacoCorpo  = MAX - idTag.length - topTag.length
 const corpoFinal   = corpo.slice(0, espacoCorpo)
-const finalUC      = corpoFinal + idTag
+const finalUC      = corpoFinal + topTag + idTag
 
 // =========================================================
 // SALVAR NO GOOGLE SHEETS (fire-and-forget)
-// Nao bloqueia o redirect — envia e segue
 // =========================================================
 try {
   const fbc = getCookie("_fbc") || params.get("fbclid") || ""
@@ -372,7 +480,6 @@ try {
     uc_completo : finalUC
   }
 
-  // envia sem await para nao atrasar o redirect
   fetch(SHEETS_URL, {
     method  : "POST",
     mode    : "no-cors",
@@ -387,7 +494,9 @@ try {
 // =========================================================
 const url = `https://shopee-utm-tracker.onrender.com/?link=${encodeURIComponent(LINK)}&uc=${finalUC}`
 
-window.location.href = url
+setTimeout(() => {
+  window.location.href = url
+}, 400)
 
 })();
 </script>
